@@ -20,6 +20,7 @@ button#b:hover{filter:brightness(1.1)}
 .a{color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
 .i button{background:#333;padding:6px 12px;border-radius:4px;font-size:12px}
 #e{color:#f44;font-size:12px;margin-top:8px;text-align:center}
+.countdown{font-size:11px;color:#aaa;min-width:60px;text-align:right;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -42,22 +43,106 @@ button#b:hover{filter:brightness(1.1)}
 <script>
 (function(){
 const $=id=>document.getElementById(id),u=$("u"),b=$("b"),t=$("t"),e=$("e"),l=$("l");
+// ── persistent links ────────────────────────────────────────────────
+const STORAGE_KEY="ziglink_links";
+function parseTtlSeconds(ttl){
+  if(!ttl||ttl.length<2)return 48*3600;
+  const n=parseInt(ttl.slice(0,-1),10);
+  if(isNaN(n))return 48*3600;
+  const u=ttl.slice(-1);
+  let m;
+  switch(u){
+    case 'm':m=60;break;
+    case 'h':m=3600;break;
+    case 'd':m=86400;break;
+    case 'w':m=7*86400;break;
+    case 'M':m=30*86400;break;
+    default:return 48*3600;
+  }
+  let v=n*m;
+  if(v>180*86400)v=180*86400;
+  return v;
+}
+function loadLinks(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return[];
+    const arr=JSON.parse(raw);
+    const now=Date.now();
+    const filtered=arr.filter(x=>x.expiresAt>now);
+    if(filtered.length!==arr.length)saveLinks(filtered);
+    return filtered;
+  }catch{return[]}
+}
+function saveLinks(a){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(a));}catch{}}
+function escapeHtml(str){return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function formatRemaining(ms){
+  if(ms<=0)return "expired";
+  const s=Math.floor(ms/1000);
+  const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),sec=s%60;
+  if(d>0)return d+"d "+h+"h";
+  if(h>0)return h+"h "+m+"m";
+  if(m>0)return m+"m "+sec+"s";
+  return sec+"s";
+}
+function renderLink(entry){
+  const div=document.createElement("div");div.className="i";div.dataset.id=entry.id;
+  const short=entry.short||location.origin+"/"+entry.id;
+  div.innerHTML=`<a href="${short}" target="_blank">${short}</a><div class="a">${escapeHtml(entry.url)}</div><span class="countdown" data-expires="${entry.expiresAt}"></span><button onclick="navigator.clipboard.writeText('${short}')">Copy</button>`;
+  return div;
+}
+function renderAll(){
+  l.innerHTML="";
+  const links=loadLinks();
+  for(const entry of links) l.appendChild(renderLink(entry));
+}
+function addLink(d,ttl){
+  const short=location.origin+"/"+d.id;
+  const ttlSec=parseTtlSeconds(ttl);
+  const now=Date.now();
+  const entry={id:d.id,short,url:d.url,ttl,createdAt:now,expiresAt:now+ttlSec*1000};
+  const links=loadLinks();
+  links.unshift(entry);
+  if(links.length>50)links.length=50;
+  saveLinks(links);
+  l.prepend(renderLink(entry));
+}
+function updateCountdowns(){
+  const now=Date.now();
+  for(const el of Array.from(l.children)){
+    const cd=el.querySelector(".countdown");
+    if(!cd)continue;
+    const exp=parseInt(cd.dataset.expires,10);
+    const rem=exp-now;
+    cd.textContent=formatRemaining(rem);
+    if(rem<=0)cd.style.color="#f66";
+  }
+}
+function cleanupExpired(){
+  const links=loadLinks();
+  const ids=new Set(links.map(x=>x.id));
+  for(const el of Array.from(l.children)){
+    const id=el.dataset.id;
+    if(id&&!ids.has(id))el.remove();
+  }
+}
+renderAll();
+updateCountdowns();
+setInterval(()=>{updateCountdowns();cleanupExpired();},1000);
 async function shorten(ev){
-ev.preventDefault();
-e.textContent="";
-b.disabled=true;
-try{
-const r=await fetch("/api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:u.value.trim(),ttl:t.value})});
-if(!r.ok)throw new Error((await r.text())||("HTTP "+r.status));
-const d=await r.json();
-const short=location.origin+"/"+d.id;
-const div=document.createElement("div");
-div.className="i";
-div.innerHTML=`<a href="${short}" target="_blank">${short}</a><div class="a">${d.url}</div><button onclick="navigator.clipboard.writeText('${short}')">Copy</button>`;
-l.prepend(div);
-e.textContent="made at "+d.short;
-}catch(err){e.textContent="Error: "+err.message}
-finally{b.disabled=false}
+  ev.preventDefault();
+  e.textContent="";e.style.color="#f44";
+  b.disabled=true;
+  try{
+    const r=await fetch("/api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:u.value.trim(),ttl:t.value})});
+    if(!r.ok)throw new Error((await r.text())||("HTTP "+r.status));
+    const d=await r.json();
+    addLink(d,t.value);
+    updateCountdowns();
+    e.style.color="#4a4";
+    e.textContent="made at "+d.short;
+  }catch(err){e.style.color="#f44";e.textContent="Error: "+err.message}
+  finally{b.disabled=false}
 }
 const f=$("f");
 f.addEventListener("submit",shorten);
