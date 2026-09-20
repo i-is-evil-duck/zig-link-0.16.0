@@ -1,0 +1,7 @@
+.{
+    .name = .zig_server,
+    .version = "0.1.0",
+    .dependencies = .{},
+    .paths = .{""},
+    .fingerprint = 0x163d0e719e06abb6,
+}

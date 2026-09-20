@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZigLink</title>
+<link rel="icon" type="image/png" href="/a.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;max-width:600px;margin:20px auto;padding:10px;background:#0f0f0f;color:#fff}
+h1{text-align:center;font-size:24px}
+.tag{color:#666;margin:10px 0;text-align:center;font-size:14px}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input#u{flex:1 1 260px;background:#1a1a1a;color:#fff;border:1px solid #444;padding:10px 12px;border-radius:6px;font-size:14px}
+select{background:#333;color:#fff;border:1px solid #444;padding:10px;border-radius:6px;font-size:14px}
+button{background:#4a4;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:14px;touch-action:manipulation}
+button:disabled{opacity:.5;cursor:default}
+button#b:hover{filter:brightness(1.1)}
+.i{display:flex;justify-content:space-between;align-items:center;padding:12px;margin:8px 0;background:#1a1a1a;border-radius:8px;gap:10px;font-size:14px}
+.i a{text-decoration:none;word-break:break-all;color:#fff;font-size:14px}
+.a{color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.i button{background:#333;padding:6px 12px;border-radius:4px;font-size:12px}
+#e{color:#f44;font-size:12px;margin-top:8px;text-align:center}
+</style>
+</head>
+<body>
+<h1>ZigLink</h1>
+<p class="tag">≽^•⩊•^≼</p>
+<form id="f">
+<input id="u" type="url" placeholder="https://example.com" maxlength="4096" required autocomplete="off" spellcheck="false">
+<select id="t">
+<option value="5m">5 min</option>
+<option value="6h">6 hours</option>
+<option value="48h" selected>48 hours</option>
+<option value="2w">2 weeks</option>
+<option value="1M">1 month</option>
+<option value="3M">3 months</option>
+</select>
+<button id="b" type="submit">Shorten</button>
+</form>
+<div id="e"></div>
+<div id="l"></div>
+<script>
+(function(){
+const $=id=>document.getElementById(id),u=$("u"),b=$("b"),t=$("t"),e=$("e"),l=$("l");
+async function shorten(ev){
+ev.preventDefault();
+e.textContent="";
+b.disabled=true;
+try{
+const r=await fetch("/api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:u.value.trim(),ttl:t.value})});
+if(!r.ok)throw new Error((await r.text())||("HTTP "+r.status));
+const d=await r.json();
+const short=location.origin+"/"+d.id;
+const div=document.createElement("div");
+div.className="i";
+div.innerHTML=`<a href="${short}" target="_blank">${short}</a><div class="a">${d.url}</div><button onclick="navigator.clipboard.writeText('${short}')">Copy</button>`;
+l.prepend(div);
+e.textContent="made at "+d.short;
+}catch(err){e.textContent="Error: "+err.message}
+finally{b.disabled=false}
+}
+const f=$("f");
+f.addEventListener("submit",shorten);
+})();
+</script>
+</body>
+</html>
