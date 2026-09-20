@@ -2,7 +2,7 @@ services:
   zig-link:
     build: .
     ports:
-      - "8081:8080"
+      - "8086:8080"
     volumes:
       - zig-link-data:/app/data
     restart: unless-stopped
