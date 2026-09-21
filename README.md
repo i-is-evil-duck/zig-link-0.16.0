@@ -1,5 +1,7 @@
-# zig-link
+# Zig-Link  <br />  <img alt="Stargazers" src="https://img.shields.io/github/stars/i-is-evil-duck/zig-link-0.16.0?style=for-the-badge&logo=starship&color=C9CBFF&logoColor=D9E0EE&labelColor=302D41">
 
+
+## Zig-Link
 A minimal link shortener written in Zig (0.16), built as a single static-ish
 binary served by a hand-rolled HTTP/1.1 server. Base for this project:
 [j3lybin.0.16.0](https://github.com/i-is-evil-duck/j3lybin.0.16.0).
@@ -84,3 +86,16 @@ repo root; the Dockerfile extracts it during the build stage.
 zig build -Doptimize=ReleaseFast
 ./zig-out/bin/zig-link 8080
 ```
+
+## Downloads
+
+Download the pre-built executables from the [releases](https://github.com/i-is-evil-duck/zig-link-0.16.0/releases) page.
+
+| Platform | File |
+|----------|------|
+| Linux | `zig-link` |
+| Docker | `docker compose up -d --build` |
+
+## Views
+
+<img src="https://count.getloli.com/get/@ZigLink?theme=rule34" />
